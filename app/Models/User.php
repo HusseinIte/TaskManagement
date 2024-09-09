@@ -38,8 +38,10 @@ class User extends Authenticatable implements JWTSubject
     ];
 
     protected $attributes = [
-        'role' => RoleUser::User->value,
+        'role' => RoleUser::User,
     ];
+    const CREATED_AT = 'created_on';
+    const UPDATED_AT = 'updated_on';
 
     /**
      * Get the attributes that should be cast.
@@ -82,4 +84,6 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(Task::class, 'created_by');
     }
+
+
 }

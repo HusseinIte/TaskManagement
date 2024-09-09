@@ -56,7 +56,7 @@ class UserController extends Controller
     {
         try {
             $this->userService->deleteUser($id);
-            return response()->json(['message' => 'Book is deleted successfully'], 200);
+            return response()->json(['message' => 'User is deleted successfully'], 200);
         } catch (ModelNotFoundException $e) {
             return $this->sendError('delete failed', ['error' => $e->getMessage()], 404);
         }

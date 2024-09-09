@@ -2,13 +2,13 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\RoleUser;
+use App\Enums\Priority;
+use App\Enums\TaskStatus;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Validation\Rule;
 
-class StoreUserFormRequest extends FormRequest
+class storeTaskFrormRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -26,10 +26,13 @@ class StoreUserFormRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'role'=> ['nullable','in:' . implode(',', array_column(RoleUser::cases(), 'value'))]
+            'title'=>'required|string|min:3|max:100',
+            'description'=>'required|string|min:3|max:100',
+            'priority'=>['required','string','in:' . implode(',', array_column(Priority::cases(), 'value'))],
+            'due_date'=>'required|date',
+            'status'=>['nullable','in:' . implode(',', array_column(TaskStatus::cases(), 'value'))],
+            'assigned_to'=>'nullable|exists:users,id',
+            'created_by'=>'nullable|exists:users,id'
         ];
     }
     protected function failedValidation(Validator $validator)
