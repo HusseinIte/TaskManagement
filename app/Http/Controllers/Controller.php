@@ -2,40 +2,62 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+
 abstract class Controller
 {
-     /**
-     * success response method.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function sendResponse($result, $message)
+    public function sendResponse($data, $message, $code = 200)
     {
-    	$response = [
-            'success' => true,
-            'data'    => $result,
-            'message' => $message,
-        ];
 
-        return response()->json($response, 200);
+        $respone = [
+            'success' => true,
+            'message' => $message,
+            'data' => $data
+        ];
+        return response()->json($respone, $code);
     }
 
-    /**
-     * return error response.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function sendError($error, $errorMessages = [], $code = 404)
+
+    public function sendError($data, $message, $code = 404)
     {
-    	$response = [
+
+        $respone = [
             'success' => false,
-            'message' => $error,
+            'message' => $message,
+            'data' => $data
         ];
+        return response()->json($respone, $code);
+    }
 
-        if(!empty($errorMessages)){
-            $response['data'] = $errorMessages;
-        }
 
-        return response()->json($response, $code);
+    /**
+     * Generates a JSON response with paginated data.
+     *
+     * Transforms the paginated items using the provided resource class and
+     * returns the transformed data along with pagination information.
+     *
+     * @param \Illuminate\Pagination\LengthAwarePaginator $paginator The paginator instance containing the items.
+     * @param string $resourceClass The resource class used to transform the paginated items.
+     * @param string $message Optional message to be included in the response.
+     * @param int $status HTTP status code.
+     *
+     * @return \Illuminate\Http\JsonResponse A JSON response containing the transformed items and pagination details.
+     */
+    public static function paginated(LengthAwarePaginator $paginator, $resourceClass, $message = '', $status)
+    {
+        $transformedItems = $resourceClass::collection($paginator->items());
+
+        return response()->json([
+            'status' => 'success',
+            'message' => trans($message),
+            'data' => $transformedItems,
+            'pagination' => [
+                'total' => $paginator->total(),
+                'count' => $paginator->count(),
+                'per_page' => $paginator->perPage(),
+                'current_page' => $paginator->currentPage(),
+                'total_pages' => $paginator->lastPage(),
+            ],
+        ], $status);
     }
 }

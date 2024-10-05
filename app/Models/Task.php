@@ -48,12 +48,12 @@ class Task extends Model
     }
     public function createdBy()
     {
-        return $this->belongsTo(User::class, 'assigned_to');
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function assignedTo()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     public function scopePriority($query, $priority)

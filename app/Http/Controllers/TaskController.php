@@ -7,6 +7,7 @@ use App\Http\Requests\storeTaskFrormRequest;
 use App\Http\Requests\updateStatusTaskRequest;
 use App\Models\Task;
 use App\Service\TaskService;
+use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -23,11 +24,11 @@ class TaskController extends Controller
      */
     public function index(Request $request)
     {
-        try{
-        $tasks = $this->taskService->getAll($request);
-        return $this->sendResponse($tasks, 'tasks have been retrieved successfully');
-        }catch(AuthorizationException $e){
-            return $this->sendError('unAuthorization', ['error' => $e->getMessage()],403);
+        try {
+            $tasks = $this->taskService->getAll($request);
+            return $this->sendResponse($tasks, 'tasks have been retrieved successfully');
+        } catch (AuthorizationException $e) {
+            return $this->sendError('unAuthorization', ['error' => $e->getMessage()], 403);
         }
     }
 
@@ -36,14 +37,13 @@ class TaskController extends Controller
      */
     public function store(storeTaskFrormRequest $request)
     {
-        try{
+        try {
             $validated = $request->validated();
             $task = $this->taskService->store($validated);
             return $this->sendResponse($task, 'task has been created successfully');
-        }catch(AuthorizationException $e){
-            return $this->sendError('unAuthorization', ['error' => $e->getMessage()],403);
+        } catch (Exception $e) {
+            return $this->sendError('unAuthorization', ['error' => $e->getMessage()], 403);
         }
-
     }
 
     /**
@@ -69,9 +69,9 @@ class TaskController extends Controller
             return $this->sendResponse($task, 'task has been updated successfully');
         } catch (ModelNotFoundException $e) {
             return $this->sendError('update failed', ['error' => $e->getMessage()]);
-        }catch(AuthorizationException $e){
-            return $this->sendError('unAuthorization', ['error' => $e->getMessage()],403);
-        }catch (\Exception $e) {
+        } catch (AuthorizationException $e) {
+            return $this->sendError('unAuthorization', ['error' => $e->getMessage()], 403);
+        } catch (\Exception $e) {
             return $this->sendError('update failed', ['error' => $e->getMessage()], 400);
         }
     }
@@ -85,8 +85,8 @@ class TaskController extends Controller
             return $this->sendResponse($task, 'task has been assigned successfully');
         } catch (ModelNotFoundException $e) {
             return $this->sendError('assign failed', ['error' => $e->getMessage()]);
-        }catch(AuthorizationException $e){
-            return $this->sendError('unAuthorization', ['error' => $e->getMessage()],403);
+        } catch (AuthorizationException $e) {
+            return $this->sendError('unAuthorization', ['error' => $e->getMessage()], 403);
         }
     }
 
@@ -98,10 +98,27 @@ class TaskController extends Controller
         try {
             $this->taskService->deleteTask($id);
             return response()->json(['message' => 'Task is deleted successfully'], 200);
-        } catch (ModelNotFoundException $e) {
-            return $this->sendError('delete failed', ['error' => $e->getMessage()], 404);
-        }catch(AuthorizationException $e){
-            return $this->sendError('unAuthorization', ['error' => $e->getMessage()],403);
+        } catch (\Exception $e) {
+            return $this->sendError(null,  $e->getMessage(), 404);
+        }
+    }
+
+    public function forceDeleteTask($id)
+    {
+        try {
+            $this->taskService->forceDeleteTask($id);
+            return response()->json(['message' => 'Task is deleted Permanently'], 200);
+        } catch (\Exception $e) {
+            return $this->sendError(null,  $e->getMessage(), 404);
+        }
+    }
+    public function restoreTask($id)
+    {
+        try {
+            $this->taskService->restoreTask($id);
+            return response()->json(['message' => 'Task is restored successfully'], 200);
+        } catch (\Exception $e) {
+            return $this->sendError(null,  $e->getMessage(), 404);
         }
     }
 }

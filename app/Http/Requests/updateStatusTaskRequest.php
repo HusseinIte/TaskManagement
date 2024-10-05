@@ -3,7 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Enums\TaskStatus;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class updateStatusTaskRequest extends FormRequest
 {
@@ -25,5 +27,13 @@ class updateStatusTaskRequest extends FormRequest
         return [
             'status'=>['required','in:' . implode(',', array_column(TaskStatus::cases(), 'value'))]
         ];
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(response()->json([
+            'status' => 'error',
+            'errors' => $validator->errors(),
+        ], 422));
     }
 }

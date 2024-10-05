@@ -11,13 +11,14 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 
 class TaskService
 {
     public function getAll(Request $request)
     {
         //  can access from  Admin or  Manager
-        if (!Gate::allows('get-all-task')) {
+        if (!Gate::allows('getAllTask', Task::class)) {
             throw new AuthorizationException('You are not authorized to get all task');
         }
         $query = Task::query();
@@ -32,18 +33,20 @@ class TaskService
 
     public function store(array $data)
     {
-        if (!Gate::allows('create-task')) {
-            throw new AuthorizationException('You are not authorized to create task');
+        try {
+            Gate::authorize('create', Task::class);
+            return Task::create([
+                'title' => $data['title'],
+                'description' => $data['description'],
+                'priority' => $data['priority'],
+                'due_date' => $data['due_date'],
+                'status' => TaskStatus::NEW,
+                'assigned_to' => $data['assigned_to'],
+                'created_by' => Auth::id()
+            ]);
+        } catch (AuthorizationException $e) {
+            throw new Exception("This action is unauthorized.");
         }
-        return Task::create([
-            'title' => $data['title'],
-            'description' => $data['description'],
-            'priority' => $data['priority'],
-            'due_date' => $data['due_date'],
-            'status' => TaskStatus::NEW,
-            'assigned_to' => $data['assigned_to'],
-            'created_by' => Auth::id()
-        ]);
     }
     public function show($id)
     {
@@ -61,7 +64,7 @@ class TaskService
         if (!$task) {
             throw new ModelNotFoundException('The task with the given ID was not found.');
         }
-        if (!Gate::allows('update-status-task', $task)) {
+        if (!Gate::allows('updateStatusTask', $task)) {
             throw new AuthorizationException('You are not authorized to update status task');
         }
         if (in_array($NewStatus, [TaskStatus::CANCELED->value, TaskStatus::FAILED->value])) {
@@ -93,7 +96,7 @@ class TaskService
             throw new ModelNotFoundException('The task with the given ID was not found.');
         }
         // can access from created user (Manager) and any admin
-        if (!Gate::allows('assign-status-task', $task)) {
+        if (!Gate::authorize('assignTask', [$task, $assignedTo])) {
             throw new AuthorizationException('You are not authorized to update assign task');
         }
         $task->assigned_to = $assignedTo;
@@ -103,14 +106,44 @@ class TaskService
 
     public function deleteTask($id)
     {
-        $task = Task::find($id);
-        if (!$task) {
-            throw new ModelNotFoundException('The task with the given ID was not found.');
+        try {
+            $task = Task::findOrFail($id);
+            Gate::authorize('deleteTask', $task);
+            $task->delete();
+        } catch (ModelNotFoundException $e) {
+            Log::error("Task id $id not found for deleting: " . $e->getMessage());
+            throw new \Exception('The task with the given ID was not found.');
+        } catch (\Exception $e) {
+            Log::error("An unexpected error while deleting task id $id: " . $e->getMessage());
+            throw new \Exception("An unexpected error while deleting task");
         }
-        // can access from created user (Manager) and any admin
-        if (!Gate::allows('delete-task', $task)) {
-            throw new AuthorizationException('You are not authorized to delete task');
+    }
+
+    public function forceDeleteTask($id)
+    {
+        try {
+            $task = Task::onlyTrashed()->findOrFail($id);
+            $task->forceDelete();
+        } catch (ModelNotFoundException $e) {
+            Log::error("Task id $id not found for force deleting: " . $e->getMessage());
+            throw new \Exception('The task with the given ID was not found.');
+        } catch (\Exception $e) {
+            Log::error("An unexpected error while force deleting task id $id: " . $e->getMessage());
+            throw new \Exception("An unexpected error while force deleting task");
         }
-        $task->delete();
+    }
+
+    public function restoreTask($id)
+    {
+        try {
+            $task = Task::onlyTrashed()->findOrFail($id);
+            $task->restore();
+        } catch (ModelNotFoundException $e) {
+            Log::error("Task id $id not found for restoring: " . $e->getMessage());
+            throw new \Exception('The task with the given ID was not found.');
+        } catch (\Exception $e) {
+            Log::error("An unexpected error while restoring task id $id: " . $e->getMessage());
+            throw new \Exception("An unexpected error while restoring task");
+        }
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Requests\StoreUserFormRequest;
 use App\Http\Requests\UpdateUserFormRequest;
 use App\Models\User;
 use App\Service\UserService;
+use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 
@@ -57,8 +58,37 @@ class UserController extends Controller
         try {
             $this->userService->deleteUser($id);
             return response()->json(['message' => 'User is deleted successfully'], 200);
-        } catch (ModelNotFoundException $e) {
-            return $this->sendError('delete failed', ['error' => $e->getMessage()], 404);
+        } catch (\Exception $e) {
+            return $this->sendError(null, $e->getMessage(), 404);
+        }
+    }
+
+    public function forceDeleteUser(string $id)
+    {
+        try {
+            $this->userService->forceDeleteUser($id);
+            return response()->json(['message' => 'User is deleted Permanently'], 200);
+        } catch (\Exception $e) {
+            return $this->sendError(null, $e->getMessage(), 404);
+        }
+    }
+    public function restoreUser(string $id)
+    {
+        try {
+            $this->userService->restoreUser($id);
+            return response()->json(['message' => 'User restored successfully'], 200);
+        } catch (\Exception $e) {
+            return $this->sendError(null, $e->getMessage(), 404);
+        }
+    }
+
+    public function show($userId)
+    {
+        try {
+            $user = $this->userService->showUser($userId);
+            return $this->sendResponse($user, "User with tasks retrieving successfully");
+        } catch (Exception $e) {
+            return $this->sendError(null, $e->getMessage());
         }
     }
 }
